@@ -31,6 +31,8 @@ static struct argp_option options[] = {
 	{"owner", 'o', "int", 0, "owner of the destination files"},
 	{"group", 'g', "int", 0, "group of the destination files"},
 	{"selinux", 's', "string", 0, "selinux attributes for destination"},
+	{"mb", 'm', "int", 0,
+	 "amount of memory to allocate in MB (default: 100)"},
 	{0},
 };
 
@@ -44,6 +46,7 @@ static struct cl_args {
 	const char *selinux;
 	uid_t owner;
 	gid_t group;
+	int mb;
 } cla;
 
 static int cptofs;
@@ -73,6 +76,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 		break;
 	case 'g':
 		cla->group = atoi(arg);
+		break;
+	case 'm':
+		cla->mb = atoi(arg);
 		break;
 	case ARGP_KEY_ARG:
 		// Capture all remaining arguments in our paths array and stop
@@ -627,6 +633,7 @@ int main(int argc, char **argv)
 
 	cla.owner = (uid_t)-1;
 	cla.group = (gid_t)-1;
+	cla.mb = 100;
 
 	if (strstr(argv[0], "cptofs")) {
 		cptofs = 1;
@@ -664,7 +671,7 @@ int main(int argc, char **argv)
 	}
 	disk_id = ret;
 
-	ret = lkl_start_kernel("mem=100M");
+	ret = lkl_start_kernel("mem=%dM", cla.mb);
 	if (ret < 0) {
 		fprintf(stderr, "failed to start kernel: %s\n",
 			lkl_strerror(ret));
