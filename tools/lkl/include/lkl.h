@@ -576,6 +576,15 @@ int lkl_if_down(int ifindex);
 int lkl_if_set_mtu(int ifindex, int mtu);
 
 /**
+ * lkl_if_set_mac - set MAC address on interface
+ *
+ * @ifindex - the ifindex of the interface
+ * @addr - 6-byte MAC address
+ * @returns - return 0 if no error: otherwise negative value returns
+ */
+int lkl_if_set_mac(int ifindex, void *addr);
+
+/**
  * lkl_if_set_ipv4 - set IPv4 address on interface
  *
  * @ifindex - the ifindex of the interface

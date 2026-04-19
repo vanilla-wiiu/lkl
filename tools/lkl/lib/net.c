@@ -141,6 +141,31 @@ int lkl_if_set_mtu(int ifindex, int mtu)
 	return err;
 }
 
+int lkl_if_set_mac(int ifindex, void *addr)
+{
+	struct lkl_ifreq ifr;
+	int err, sock;
+
+	sock = lkl_sys_socket(LKL_AF_INET, LKL_SOCK_DGRAM, 0);
+	if (sock < 0)
+		return sock;
+
+	err = ifindex_to_name(sock, &ifr, ifindex);
+	if (err < 0)
+		goto out;
+
+	err = lkl_sys_ioctl(sock, LKL_SIOCGIFHWADDR, (long)&ifr);
+	if (!err) {
+		memcpy(ifr.lkl_ifr_hwaddr.sa_data, addr, LKL_ETH_ALEN);
+		err = lkl_sys_ioctl(sock, LKL_SIOCSIFHWADDR, (long)&ifr);
+	}
+
+out:
+	lkl_sys_close(sock);
+
+	return err;
+}
+
 int lkl_if_set_ipv4(int ifindex, unsigned int addr, unsigned int netmask_len)
 {
 	return lkl_if_add_ip(ifindex, LKL_AF_INET, &addr, netmask_len);
