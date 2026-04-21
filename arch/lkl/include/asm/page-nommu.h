@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-#ifndef __ASM_GENERIC_PAGE_H
-#define __ASM_GENERIC_PAGE_H
+#ifndef _ASM_LKL_PAGE_NOMMU_H
+#define _ASM_LKL_PAGE_NOMMU_H
 /*
  * Generic page.h implementation, for NOMMU architectures.
  * This provides the dummy definitions for the memory management.
@@ -100,4 +100,4 @@ static inline void *pfn_to_virt(unsigned long pfn)
 #include <asm-generic/memory_model.h>
 #include <asm-generic/getorder.h>
 
-#endif /* __ASM_GENERIC_PAGE_H */
+#endif /* _ASM_LKL_PAGE_NOMMU_H */
