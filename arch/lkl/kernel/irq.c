@@ -6,9 +6,11 @@
 #include <linux/sched.h>
 #include <linux/seq_file.h>
 #include <linux/tick.h>
+#include <linux/interrupt.h>
 #include <asm/irqflags.h>
 #include <asm/host_ops.h>
 #include <asm/cpu.h>
+#include <linux/cpu.h>
 
 /*
  * To avoid much overhead we use an indirect approach: the irqs are marked using

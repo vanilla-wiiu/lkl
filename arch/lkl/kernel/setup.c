@@ -24,7 +24,7 @@ static unsigned long mem_size = 64 * 1024 * 1024;
 
 struct screen_info screen_info;
 
-long lkl_panic_blink(int state)
+static long lkl_panic_blink(int state)
 {
 	lkl_ops->panic();
 	return 0;

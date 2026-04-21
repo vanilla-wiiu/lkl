@@ -5,6 +5,7 @@
 #include <asm/host_ops.h>
 #include <asm/cpu.h>
 #include <asm/sched.h>
+#include <asm/switch_to.h>
 
 static int init_ti(struct thread_info *ti)
 {

@@ -2,6 +2,7 @@
 #include <linux/kernel.h>
 #include <asm/thread_info.h>
 #include <linux/stacktrace.h>
+#include <linux/sched/debug.h>
 
 #ifdef CONFIG_PRINTK
 #if defined(CONFIG_FRAME_POINTER) && !defined(__s390__)
