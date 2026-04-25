@@ -148,13 +148,13 @@ jobs:
         run: |
           make -j4 -C tools/lkl ${{ matrix.build_options }}
       - name: Tests
-        run: mkdir /tmp/junit && make -C tools/lkl run-tests tests="--junit-dir /tmp/junit"
+        run: mkdir junit && make -C tools/lkl run-tests tests="--junit-dir ../../junit"
       - name: Save test results
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: test-results-${{ matrix.displayTargetName }}
-          path: /tmp/junit/*.xml
+          path: junit/*.xml
 
   checkpatch:
     runs-on: ubuntu-24.04
