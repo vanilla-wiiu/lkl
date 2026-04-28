@@ -138,7 +138,7 @@ for s in tap.run.suites:
         except:
             log = ""
 
-        jt = TestCase(t.description, elapsed_sec=secs, stdout=log)
+        jt = TestCase(t.description, elapsed_sec=secs, stdout=log, classname=s.name)
         if t.result == 'skip':
             jt.add_skipped_info(output=log)
         elif t.result == 'not ok':
