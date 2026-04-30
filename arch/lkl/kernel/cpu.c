@@ -6,7 +6,7 @@
 #include <asm/unistd.h>
 #include <asm/sched.h>
 #include <asm/syscalls.h>
-
+#include <linux/cpu.h>
 
 /*
  * This structure is used to get access to the "LKL CPU" that allows us to run

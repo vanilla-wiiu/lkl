@@ -516,6 +516,7 @@ void rxrpc_connect_client_calls(struct rxrpc_local *local)
 
 		spin_lock(&local->client_call_lock);
 		list_move_tail(&call->wait_link, &bundle->waiting_calls);
+		rxrpc_see_call(call, rxrpc_call_see_waiting_call);
 		spin_unlock(&local->client_call_lock);
 
 		if (rxrpc_bundle_has_space(bundle))
@@ -586,7 +587,10 @@ void rxrpc_disconnect_client_call(struct rxrpc_bundle *bundle, struct rxrpc_call
 		_debug("call is waiting");
 		ASSERTCMP(call->call_id, ==, 0);
 		ASSERT(!test_bit(RXRPC_CALL_EXPOSED, &call->flags));
+		/* May still be on ->new_client_calls. */
+		spin_lock(&local->client_call_lock);
 		list_del_init(&call->wait_link);
+		spin_unlock(&local->client_call_lock);
 		return;
 	}
 
@@ -636,7 +640,7 @@ void rxrpc_disconnect_client_call(struct rxrpc_bundle *bundle, struct rxrpc_call
 	    test_bit(RXRPC_CALL_EXPOSED, &call->flags)) {
 		unsigned long final_ack_at = jiffies + 2;
 
-		WRITE_ONCE(chan->final_ack_at, final_ack_at);
+		chan->final_ack_at = final_ack_at;
 		smp_wmb(); /* vs rxrpc_process_delayed_final_acks() */
 		set_bit(RXRPC_CONN_FINAL_ACK_0 + channel, &conn->flags);
 		rxrpc_reduce_conn_timer(conn, final_ack_at);
@@ -770,7 +774,7 @@ next:
 
 		conn_expires_at = conn->idle_timestamp + expiry;
 
-		now = READ_ONCE(jiffies);
+		now = jiffies;
 		if (time_after(conn_expires_at, now))
 			goto not_yet_expired;
 	}

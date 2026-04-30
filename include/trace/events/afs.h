@@ -331,7 +331,11 @@ enum yfs_cm_operation {
 	EM(afs_edit_dir_delete,			"delete") \
 	EM(afs_edit_dir_delete_error,		"d_err ") \
 	EM(afs_edit_dir_delete_inval,		"d_invl") \
-	E_(afs_edit_dir_delete_noent,		"d_nent")
+	EM(afs_edit_dir_delete_noent,		"d_nent") \
+	EM(afs_edit_dir_update_dd,		"u_ddot") \
+	EM(afs_edit_dir_update_error,		"u_fail") \
+	EM(afs_edit_dir_update_inval,		"u_invl") \
+	E_(afs_edit_dir_update_nodd,		"u_nodd")
 
 #define afs_edit_dir_reasons				  \
 	EM(afs_edit_dir_for_create,		"Create") \
@@ -340,6 +344,7 @@ enum yfs_cm_operation {
 	EM(afs_edit_dir_for_rename_0,		"Renam0") \
 	EM(afs_edit_dir_for_rename_1,		"Renam1") \
 	EM(afs_edit_dir_for_rename_2,		"Renam2") \
+	EM(afs_edit_dir_for_rename_sub,		"RnmSub") \
 	EM(afs_edit_dir_for_rmdir,		"RmDir ") \
 	EM(afs_edit_dir_for_silly_0,		"S_Ren0") \
 	EM(afs_edit_dir_for_silly_1,		"S_Ren1") \
@@ -1189,8 +1194,8 @@ TRACE_EVENT(afs_flock_op,
 		    __entry->from = fl->fl_start;
 		    __entry->len = fl->fl_end - fl->fl_start + 1;
 		    __entry->op = op;
-		    __entry->type = fl->fl_type;
-		    __entry->flags = fl->fl_flags;
+		    __entry->type = fl->c.flc_type;
+		    __entry->flags = fl->c.flc_flags;
 		    __entry->debug_id = fl->fl_u.afs.debug_id;
 			   ),
 
