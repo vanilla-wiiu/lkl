@@ -1,3 +1,4 @@
+name: 'CI'
 on:
   push:
     branches:
@@ -148,13 +149,23 @@ jobs:
         run: |
           make -j4 -C tools/lkl ${{ matrix.build_options }}
       - name: Tests
-        run: mkdir /tmp/junit && make -C tools/lkl run-tests tests="--junit-dir /tmp/junit"
+        run: mkdir junit && make -C tools/lkl run-tests tests="--junit-dir ../../junit"
       - name: Save test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-${{ matrix.displayTargetName }}
-          path: /tmp/junit/*.xml
+          path: junit/*.xml
+
+  event_file:
+    name: "Event File"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload
+        uses: actions/upload-artifact@v5
+        with:
+          name: Event File
+          path: ${{ github.event_path }}
 
   checkpatch:
     runs-on: ubuntu-24.04
