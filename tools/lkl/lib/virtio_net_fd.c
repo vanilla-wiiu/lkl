@@ -12,10 +12,9 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 #ifdef __FreeBSD__
 #include <sys/syslimits.h>
-#else
-#include <limits.h>
 #endif
 #include <fcntl.h>
 #include <sys/poll.h>
