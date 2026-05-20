@@ -75,7 +75,11 @@ $(DOT_CONFIG): $(OUTPUT)/kernel.config
 	$(Q)$(MAKE) -C ../.. ARCH=lkl $(KOPT) syncconfig
 
 # rule to build lkl.o
-$(OUTPUT)lib/lkl.o: bin/stat $(DOT_CONFIG)
+# FORCE is required so the recursive kernel build is always invoked; kbuild
+# inside the sub-make handles incremental compilation based on source-file
+# timestamps. Without FORCE, changes to kernel sources are silently ignored
+# because lib/lkl.o has no dependency on them.
+$(OUTPUT)lib/lkl.o: bin/stat $(DOT_CONFIG) FORCE
 # this workaround is for arm32 linker (ld.gold)
 	$(Q)export PATH="$(srctree)/tools/lkl/bin/:${PATH}" ;\
 	$(MAKE) -C ../.. ARCH=lkl $(KOPT)
