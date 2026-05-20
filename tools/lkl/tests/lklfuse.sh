@@ -17,32 +17,27 @@ cleanup()
     rmdir $dir
 }
 
-# $1 - disk image
-# $2 - fstype
+# $1 - fstype
 function prepfs()
 {
     set -e
 
-    dd if=/dev/zero of=$1 bs=1048576 count=300
+    dd if=/dev/zero of=$file bs=1048576 count=300
 
-    yes | mkfs.$2 $1
+    yes | mkfs.$1 $file
 }
 
-# $1 - disk image
-# $2 - mount point
-# $3 - filesystem type
-# $4 - lock file
+# $1 - filesystem type
 lklfuse_mount()
 {
-    ${script_dir}/../lklfuse $1 $2 -o type=$3,lock=$4
+    ${script_dir}/../lklfuse $file $dir -o type=$1,lock=$lock_file
 }
 
-# $1 - mount point
 lklfuse_basic()
 {
     set -e
 
-    cd $1
+    cd $dir
     touch a
     if ! [ -e ]; then exit 1; fi
     rm a
@@ -51,8 +46,7 @@ lklfuse_basic()
     rmdir a
 }
 
-# $1 - dir
-# $2 - filesystem type
+# $1 - filesystem type
 lklfuse_stressng()
 {
     set -e
@@ -62,9 +56,9 @@ lklfuse_stressng()
         return $TEST_SKIP
     fi
 
-    cd $1
+    cd $dir
 
-    if [ "$2" = "vfat" ]; then
+    if [ "$1" = "vfat" ]; then
         exclude="chmod,filename,link,mknod,symlink,xattr"
     fi
 
@@ -73,16 +67,14 @@ lklfuse_stressng()
 	      --sync-file-bytes 10m
 }
 
-# $1 - disk image
-# $2 - filesystem type
-# $3 - lock file
+# $1 - filesystem type
 lklfuse_lock_conflict()
 {
     local ret=$TEST_FAILURE unused_mnt=`mktemp -d`
 
     set +e
     # assume lklfuse already running with same lock file, causing lock conflict
-    ${script_dir}/../lklfuse -f $1 $unused_mnt -o type=$2,lock=$3
+    ${script_dir}/../lklfuse -f $file $unused_mnt -o type=$1,lock=$lock_file
     [ $? -eq 2 ] && ret=$TEST_SUCCESS
     rmdir "$unused_mnt"
     return $ret
@@ -124,11 +116,11 @@ trap cleanup EXIT
 
 lkl_test_plan 5 "lklfuse $fstype"
 
-lkl_test_run 1 prepfs $file $fstype
-lkl_test_run 2 lklfuse_mount $file $dir $fstype $lock_file
-lkl_test_run 3 lklfuse_basic $dir
+lkl_test_run 1 prepfs $fstype
+lkl_test_run 2 lklfuse_mount $fstype
+lkl_test_run 3 lklfuse_basic
 # stress-ng returns 2 with no apparent failures so skip it for now
-#lkl_test_run 4 lklfuse_stressng $dir $fstype
-lkl_test_run 4 lklfuse_lock_conflict $file $fstype $lock_file
+#lkl_test_run 4 lklfuse_stressng $fstype
+lkl_test_run 4 lklfuse_lock_conflict $fstype
 trap : EXIT
 lkl_test_run 5 cleanup
