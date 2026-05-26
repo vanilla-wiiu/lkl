@@ -118,7 +118,6 @@ endef
 
 define kasan_test_enable
   $(call set_kernel_config,KUNIT,y)
-  $(call set_kernel_config,BUILTIN_CMDLINE,\"kunit.filter_glob=\")
   $(call set_kernel_config,KASAN_KUNIT_TEST,y)
 endef
 
@@ -249,10 +248,12 @@ define mmu_test_enable
   $(call set_kernel_config,LKL_MMU_KUNIT_TEST,y)
 endef
 
-define pci_test_enable
+define kunit_test_enable
   $(call set_autoconf_var,LKL_PCI_KUNIT_TEST,y)
   $(call set_kernel_config,KUNIT,y)
   $(call set_kernel_config,LKL_PCI_KUNIT_TEST,y)
+  $(if $(filter $(LD_FMT),$(KASAN_HOSTS)),$(call set_kernel_config,KASAN,y))
+  $(if $(filter $(LD_FMT),$(KASAN_HOSTS)),$(call kasan_test_enable))
 endef
 
 define do_autoconf_mmu
@@ -268,7 +269,7 @@ define do_autoconf
   $(if $(filter $(EXEC_FMT),$(POSIX_HOSTS)),$(call posix_host,$(LD_FMT)))
   $(if $(filter $(EXEC_FMT),$(NT_HOSTS)),$(call nt_host,$(LD_FMT)))
   $(if $(and $(filter yes,$(kasan)),$(filter $(LD_FMT),$(KASAN_HOSTS))),$(call kasan_enable,$(LD_FMT)))
-  $(if $(PCI_KUNIT), $(call pci_test_enable))
+  $(if $(kunit), $(call kunit_test_enable))
   $(if $(MMU),$(call do_autoconf_mmu))
 endef
 

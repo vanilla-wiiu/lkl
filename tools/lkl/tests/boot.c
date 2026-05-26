@@ -557,7 +557,7 @@ static const char *boot_log;
 
 #ifdef LKL_CONFIG_KASAN_KUNIT_TEST
 
-#define KASAN_CMD_LINE "kunit.filter_glob=kasan* "
+#define KASAN_CMD_LINE
 
 static int lkl_test_kasan(void)
 {
@@ -685,7 +685,7 @@ static int lkl_test_kunit_mmu(void)
 	return TEST_FAILURE;
 }
 
-#define LKL_MMU_TEST_CMD_LINE "kunit.filter_glob=lkl_mmu "
+#define LKL_MMU_TEST_CMD_LINE
 #else
 #define LKL_MMU_TEST_CMD_LINE
 #endif // LKL_HOST_CONFIG_LKL_MMU_TEST
@@ -713,7 +713,7 @@ static int lkl_test_kunit_pci(void)
 	return TEST_FAILURE;
 }
 
-#define LKL_PCI_TEST_CMD_LINE "kunit.filter_glob=lkl_pci "
+#define LKL_PCI_TEST_CMD_LINE
 #else
 #define LKL_PCI_TEST_CMD_LINE
 #endif // LKL_HOST_CONFIG_LKL_PCI_KUNIT_TEST

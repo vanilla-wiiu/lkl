@@ -18,11 +18,11 @@ jobs:
             os: unix
             runs_on: ubuntu-22.04
             shell: bash
-          - displayTargetName: kasan
+          - displayTargetName: kunit
             os: unix
             runs_on: ubuntu-22.04
             shell: bash
-            build_options: "kasan=yes kasan_test=yes"
+            build_options: "kunit=yes"
           - displayTargetName: mmu_kasan
             os: unix
             runs_on: ubuntu-22.04
