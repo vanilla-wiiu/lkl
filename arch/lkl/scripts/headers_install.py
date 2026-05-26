@@ -192,10 +192,13 @@ class Installer:
             search_str = r"(\W?union\s+)" + s + r"(\W)"
             replace_str = "\\1" + self.lkl_prefix(s) + "\\2"
             content = re.sub(search_str, replace_str, content, flags = re.MULTILINE)
-        existing = open(dst).read() if os.path.exists(dst) else None
+        content = content.encode()
+        existing = None
+        if os.path.exists(dst) and os.stat(dst).st_size == len(content):
+            existing = open(dst, 'rb').read()
         if content != existing:
             print("  INSTALL\t%s" % dst)
-            open(dst, 'w').write(content)
+            open(dst, 'wb').write(content)
         os.unlink(h)
 
     def update_headers(self):
