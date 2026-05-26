@@ -557,8 +557,6 @@ static const char *boot_log;
 
 #ifdef LKL_CONFIG_KASAN_KUNIT_TEST
 
-#define KASAN_CMD_LINE
-
 static int lkl_test_kasan(void)
 {
 	char *log = strdup(boot_log);
@@ -584,8 +582,6 @@ out:
 	free(log);
 	return result;
 }
-#else
-#define KASAN_CMD_LINE
 #endif
 
 #ifdef LKL_HOST_CONFIG_MMU
@@ -684,10 +680,6 @@ static int lkl_test_kunit_mmu(void)
 
 	return TEST_FAILURE;
 }
-
-#define LKL_MMU_TEST_CMD_LINE
-#else
-#define LKL_MMU_TEST_CMD_LINE
 #endif // LKL_HOST_CONFIG_LKL_MMU_TEST
 
 #ifdef LKL_HOST_CONFIG_LKL_PCI_KUNIT_TEST
@@ -712,14 +704,9 @@ static int lkl_test_kunit_pci(void)
 
 	return TEST_FAILURE;
 }
-
-#define LKL_PCI_TEST_CMD_LINE
-#else
-#define LKL_PCI_TEST_CMD_LINE
 #endif // LKL_HOST_CONFIG_LKL_PCI_KUNIT_TEST
 
-#define CMD_LINE "mem=32M loglevel=8 " KASAN_CMD_LINE LKL_MMU_TEST_CMD_LINE \
-	LKL_PCI_TEST_CMD_LINE
+#define CMD_LINE "mem=32M loglevel=8 "
 
 static int lkl_test_start_kernel(void)
 {
