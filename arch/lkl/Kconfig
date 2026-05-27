@@ -127,6 +127,18 @@ config PCI
 	select ARCH_HAS_DMA_OPS
 	default y
 
+config LKL_PCI_KUNIT_TEST
+	bool "KUnit tests for LKL PCI DMA"
+	depends on PCI && KUNIT
+	default n
+	help
+	  Enable KUnit tests for the LKL PCI DMA mapping operations.
+
+	  These tests exercise the LKL PCI dma_map_ops allocation and free
+	  paths through stub PCI host operations, and verify that coherent DMA
+	  memory returned to callers is unmapped and released using the correct
+	  CPU address.
+
 config RAID6_PQ_BENCHMARK
 	bool
 	default n

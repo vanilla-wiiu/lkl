@@ -121,7 +121,7 @@ static void lkl_dma_free(struct device *dev, size_t size, void *cpu_addr,
 			 dma_addr_t dma_addr, unsigned long attrs)
 {
 	lkl_ops->pci_ops->unmap_page(to_pci_dev(dev)->sysdata, dma_addr, size);
-	__free_pages(cpu_addr, get_order(size));
+	__free_pages(virt_to_page(cpu_addr), get_order(size));
 }
 
 static dma_addr_t lkl_dma_map_page(struct device *dev, struct page *page,
