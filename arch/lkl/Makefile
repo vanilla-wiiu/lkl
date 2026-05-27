@@ -82,18 +82,36 @@ archprepare: arch/lkl/include/generated/uapi/asm/config.h
 
 all: lkl.o arch/lkl/include/generated/uapi/asm/syscall_defs.h
 
+# The recipe runs on every build because 'vmlinux' is PHONY in the top-level
+# Makefile, so we cannot use $(if_changed) (newer-prereqs filters out PHONY,
+# making it miss real vmlinux content changes). Instead, write to a tmp file
+# and cmp before replacing, so $@'s mtime is preserved on no-op rebuilds and
+# downstream consumers (e.g. tools/lkl/liblkl.a) are not relinked needlessly.
+quiet_cmd_link_lkl = OBJCOPY $@
+      cmd_link_lkl = $(OBJCOPY) $(if $(KEEP_EH_FRAMES),,-R .eh_frame) \
+                     -R .syscall_defs \
+                     $(foreach sym,$(LKL_ENTRY_POINTS),-G$(prefix)$(sym)) \
+                     --prefix-symbols=$(prefix) $< $@.new && \
+                     { if cmp -s $@.new $@; then rm -f $@.new; \
+                       else mv -f $@.new $@; fi; }
+
 lkl.o: vmlinux
-	$(OBJCOPY) $(if $(KEEP_EH_FRAMES),,-R .eh_frame) -R .syscall_defs $(foreach sym,$(LKL_ENTRY_POINTS),-G$(prefix)$(sym)) --prefix-symbols=$(prefix) vmlinux lkl.o
+	$(call cmd,link_lkl)
+
+quiet_cmd_gen_syscall_defs = OBJCOPY $@
+      cmd_gen_syscall_defs = $(OBJCOPY) -j .syscall_defs -O binary \
+                             --set-section-flags .syscall_defs=alloc $< $@.raw && \
+                             sed 's/\x0//g' $@.raw > $@.new && rm -f $@.raw && \
+                             { if cmp -s $@.new $@; then rm -f $@.new; \
+                               else mv -f $@.new $@; fi; }
 
 arch/lkl/include/generated/uapi/asm/syscall_defs.h: vmlinux
-	$(OBJCOPY) -j .syscall_defs -O binary --set-section-flags .syscall_defs=alloc $< $@
-	$(Q) export tmpfile=$(shell mktemp); \
-	sed 's/\x0//g' $@ > $$tmpfile; mv $$tmpfile $@ ; rm -f $$tmpfile
+	$(call cmd,gen_syscall_defs)
 
 install: scripts_unifdef
 	@echo "  INSTALL	$(INSTALL_PATH)/lib/lkl.o"
 	@mkdir -p $(INSTALL_PATH)/lib/
-	@cp lkl.o $(INSTALL_PATH)/lib/
+	@cp -p lkl.o $(INSTALL_PATH)/lib/
 	@$(srctree)/arch/lkl/scripts/headers_install.py \
 		$(subst -j,-j$(NPROC),$(findstring -j,$(MAKEFLAGS))) \
 		$(INSTALL_PATH)/include

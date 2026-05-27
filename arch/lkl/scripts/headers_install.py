@@ -128,10 +128,16 @@ class Installer:
                 os.makedirs(out_dir)
             except:
                 pass
-            print("  INSTALL\t%s" % (out_dir + "/" + os.path.basename(h)))
-            os.system(self.srctree+"/scripts/headers_install.sh %s %s" % (self.relpath2abspath(h),
-                                                       out_dir + "/" + os.path.basename(h)))
-            new_headers.add(out_dir + "/" + os.path.basename(h))
+            # Install to a .raw tmp first. update_header() will read the raw
+            # content, produce the final prefixed version, and only overwrite
+            # the final destination when content differs - preserving mtime
+            # on no-op rebuilds so downstream host objects are not recompiled.
+            raw = out_dir + "/" + os.path.basename(h) + ".raw"
+            ret = os.system(self.srctree+"/scripts/headers_install.sh %s %s" %
+                            (self.relpath2abspath(h), raw))
+            if ret != 0:
+                sys.exit(1)
+            new_headers.add(raw)
 
         self.headers = new_headers
 
@@ -161,7 +167,9 @@ class Installer:
         self.defines.add("__NR_stime")
 
     def update_header(self, h):
-        print("  REPLACE\t%s" % h)
+        # h is a .raw tmp file produced by install_headers(); the final
+        # destination is h without the .raw suffix.
+        dst = h[:-len(".raw")]
         content = open(h).read()
         for i in self.includes:
             search_str = r"(#[ \t]*include[ \t]*[<\"][ \t]*)" + i + r"([ \t]*[>\"])"
@@ -184,7 +192,14 @@ class Installer:
             search_str = r"(\W?union\s+)" + s + r"(\W)"
             replace_str = "\\1" + self.lkl_prefix(s) + "\\2"
             content = re.sub(search_str, replace_str, content, flags = re.MULTILINE)
-        open(h, 'w').write(content)
+        content = content.encode()
+        existing = None
+        if os.path.exists(dst) and os.stat(dst).st_size == len(content):
+            existing = open(dst, 'rb').read()
+        if content != existing:
+            print("  INSTALL\t%s" % dst)
+            open(dst, 'wb').write(content)
+        os.unlink(h)
 
     def update_headers(self):
         p = multiprocessing.Pool(args.jobs)
