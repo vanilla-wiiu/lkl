@@ -88,10 +88,17 @@ void exit_task_stack_account(struct task_struct *tsk);
 
 static inline int object_is_on_stack(const void *obj)
 {
+#ifndef __HAVE_ARCH_OBJECT_IS_ON_STACK
 	void *stack = task_stack_page(current);
+#endif
 
 	obj = kasan_reset_tag(obj);
+
+#ifdef __HAVE_ARCH_OBJECT_IS_ON_STACK
+	return arch_object_is_on_stack(obj);
+#else
 	return (obj >= stack) && (obj < (stack + THREAD_SIZE));
+#endif
 }
 
 extern void thread_stack_cache_init(void);
