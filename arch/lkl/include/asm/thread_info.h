@@ -8,6 +8,23 @@
 #include <asm/processor.h>
 #include <asm/host_ops.h>
 
+#define __HAVE_ARCH_OBJECT_IS_ON_STACK
+static inline int arch_object_is_on_stack(const void *obj)
+{
+	unsigned long addr = (unsigned long)obj;
+	unsigned long stack_size;
+	unsigned long stack;
+
+	if (!lkl_ops || !lkl_ops->thread_stack)
+		return 0;
+
+	stack = (unsigned long)lkl_ops->thread_stack(&stack_size);
+	if (!stack)
+		return 0;
+
+	return addr >= stack && addr - stack < stack_size;
+}
+
 struct thread_info {
 	struct task_struct *task;
 	unsigned long flags;
