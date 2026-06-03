@@ -3,6 +3,7 @@
 script_dir=$(cd $(dirname ${BASH_SOURCE:-$0}); pwd)
 
 source $script_dir/test.sh
+source $script_dir/fs.sh
 
 cleanup()
 {
@@ -13,24 +14,14 @@ cleanup()
     else
         fusermount -u $dir
     fi
-    rm $file
+    cleanfsimg
     rmdir $dir
-}
-
-# $1 - fstype
-function prepfs()
-{
-    set -e
-
-    dd if=/dev/zero of=$file bs=1048576 count=300
-
-    yes | mkfs.$1 $file
 }
 
 # $1 - filesystem type
 lklfuse_mount()
 {
-    ${script_dir}/../lklfuse $file $dir -o type=$1,lock=$lock_file
+    ${script_dir}/../lklfuse $file $dir -o type=$1,lock=$file
 }
 
 lklfuse_basic()
@@ -108,15 +99,14 @@ if [ -z $(which mkfs.$fstype) ]; then
     exit 0
 fi
 
-file=`mktemp`
-dir=`mktemp -d`
-lock_file="$file"
+dir=`mktemp -d mnt-XXXX`
+export_vars dir
 
 trap cleanup EXIT
 
 lkl_test_plan 5 "lklfuse $fstype"
 
-lkl_test_run 1 prepfs $fstype
+lkl_test_run 1 prepfsimg $fstype
 lkl_test_run 2 lklfuse_mount $fstype
 lkl_test_run 3 lklfuse_basic
 # stress-ng returns 2 with no apparent failures so skip it for now
