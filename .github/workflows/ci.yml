@@ -18,6 +18,7 @@ jobs:
             os: unix
             runs_on: ubuntu-22.04
             shell: bash
+            run_qemu: true
           - displayTargetName: kunit
             os: unix
             runs_on: ubuntu-22.04
@@ -44,6 +45,7 @@ jobs:
             shell: bash
             build_options: "LLVM=1 CROSS_COMPILE=x86_64-unknown-freebsd SYSROOT=~/freebsd-sysroot"
             make_sysroot: "./tools/lkl/scripts/freebsd-make-sysroot.sh"
+            run_qemu: true
     timeout-minutes: 100
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -147,12 +149,12 @@ jobs:
           echo "setting env variable (debug)"
           echo "ZPOLINE_DEBUG=0" >> "$GITHUB_ENV"
       - name: Start QEMU
-        if: matrix.displayTargetName == 'linux'
+        if: matrix.run_qemu
         run: |
-          ./tools/lkl/scripts/qemu-x86_64-make-images.sh
+          ./tools/lkl/scripts/qemu-${{ matrix.displayTargetName }}-make-images.sh
           sudo chmod a+rw /dev/kvm
-          . tools/lkl/scripts/qemu-x86_64-start-and-set-env.sh
-          echo MYHOST="$HOST" >> $GITHUB_ENV
+          . tools/lkl/scripts/qemu-${{ matrix.displayTargetName }}-start-and-set-env.sh
+          echo MYHOST="$MYHOST" >> $GITHUB_ENV
           echo MYSSH="$MYSSH" >> $GITHUB_ENV
           echo MYSCP="$MYSCP" >> $GITHUB_ENV
           echo LKL_QEMU_TEST=1 >> $GITHUB_ENV
