@@ -40,7 +40,7 @@ function cleanup()
                       sudo tee /sys/bus/pci/drivers/vfio-pci/unbind'"
 }
 
-if [ -z "$LKL_QEMU_TEST" ]; then
+if [ -z "$LKL_QEMU_TEST" ] || ! [ -e $script_dir/disk-vfio-pci ] ; then
     lkl_test_plan 0 "disk-vfio-pci"
     echo "vfio not supported"
 else
