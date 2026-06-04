@@ -97,7 +97,7 @@ lkl_test_exec()
         file=$file.exe
     fi
 
-    if file $file | grep "interpreter /system/bin/linker" ; then
+    if file $file | grep -q "interpreter /system/bin/linker"; then
         adb push "$file" $ANDROID_WDIR
         if [ -n "$SUDO" ]; then
             ANDROID_USER=root
@@ -110,13 +110,13 @@ lkl_test_exec()
         fi
         WRAPPER="adb shell $SU"
         file=$ANDROID_WDIR/$(basename $file)
-    elif file $file | grep PE32; then
-        if uname -s | grep Linux; then
+    elif file $file | grep -q PE32; then
+        if uname -s | grep -q Linux; then
             WRAPPER="wine"
-	fi
-    elif file $file | grep ARM; then
+        fi
+    elif file $file | grep -q ARM; then
         WRAPPER="qemu-arm-static"
-    elif file $file | grep "FreeBSD" ; then
+    elif file $file | grep -q "FreeBSD"; then
         ssh_copy "$file" $BSD_WDIR
         if [ -n "$SUDO" ]; then
             SUDO=""
@@ -184,29 +184,6 @@ adb_push()
             adb shell chmod a+x $ANDROID_WDIR/$1
         else
             adb push $basedir/$1 $ANDROID_WDIR/$dir
-        fi
-
-        shift
-    done
-}
-
-# XXX: $MYSSH and $MYSCP are defined in a circleci docker image.
-# see the definitions in lkl/lkl-docker:circleci/freebsd11/Dockerfile
-ssh_push()
-{
-    while [ -n "$1" ]; do
-        if [[ "$1" = *.sh ]]; then
-            type="script"
-        else
-            type="file"
-        fi
-
-        dir=$(dirname $1)
-        $MYSSH mkdir -p $BSD_WDIR/$dir
-
-        $MYSCP -P 7722 -r $basedir/$1 root@localhost:$BSD_WDIR/$dir
-        if [ "$type" = "script" ]; then
-            $MYSSH chmod a+x $BSD_WDIR/$1
         fi
 
         shift
