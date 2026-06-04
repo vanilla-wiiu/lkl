@@ -117,11 +117,8 @@ lkl_test_exec()
     elif file $file | grep -q ARM; then
         WRAPPER="qemu-arm-static"
     elif file $file | grep -q "FreeBSD"; then
-        ssh_copy "$file" $BSD_WDIR
-        if [ -n "$SUDO" ]; then
-            SUDO=""
-        fi
-        WRAPPER="$MYSSH $SU"
+        $MYSCP $file $MYHOST:$BSD_WDIR
+        WRAPPER="$MYSSH $SUDO"
         # ssh will mess up with pipes ('|') so, escape the pipe char.
         args="${@//\|/\\\|}"
         set - $BSD_WDIR/$(basename $file) $args
@@ -160,7 +157,8 @@ lkl_test_cmd()
         fi
         WRAPPER="adb shell $SU"
     elif [ -n "$LKL_HOST_CONFIG_BSD" ]; then
-        WRAPPER="$MYSSH $SU"
+        WRAPPER="$MYSSH"
+        USER=lkl
     fi
 
     echo "$@" | $WRAPPER sh $SHOPTS
@@ -190,11 +188,6 @@ adb_push()
     done
 }
 
-ssh_copy()
-{
-    $MYSCP -P 7722 -r $1 root@localhost:$2
-}
-
 lkl_test_android_cleanup()
 {
     adb shell rm -rf $ANDROID_WDIR
@@ -213,6 +206,6 @@ fi
 
 if [ -n "$LKL_HOST_CONFIG_BSD" ]; then
     trap lkl_test_bsd_cleanup EXIT
-    export BSD_WDIR=/root/lkl
+    export BSD_WDIR=lkl
     $MYSSH mkdir -p $BSD_WDIR
 fi
