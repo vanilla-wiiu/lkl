@@ -8,16 +8,6 @@ pciname="0000:00:03.0"
 nvme_id="8086 5845"
 bin_name="disk-vfio-pci"
 
-function wait_guest()
-{
-    for i in `seq 300`; do
-        if $MYSSH exit 2> /dev/null; then
-            break
-        fi
-        sleep 1
-    done
-}
-
 function init()
 {
     # initialize
@@ -44,8 +34,6 @@ if [ -z "$LKL_QEMU_TEST" ] || ! [ -e $script_dir/disk-vfio-pci ] ; then
     lkl_test_plan 0 "disk-vfio-pci"
     echo "vfio not supported"
 else
-    lkl_test_plan 1 "disk-vfio-pci"
-    lkl_test_run 1 wait_guest
     lkl_test_plan 1 "disk-vfio-pci"
     lkl_test_run 1 init
     lkl_test_exec $MYSSH ./$bin_name -n $pciname

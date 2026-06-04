@@ -47,6 +47,7 @@ class Reporter(tap13.Reporter):
 mydir=os.path.dirname(os.path.realpath(__file__))
 
 tests = [
+    'vm-boot.sh',
     'boot.sh',
     'disk.sh -t ext4',
     'disk.sh -t btrfs',
