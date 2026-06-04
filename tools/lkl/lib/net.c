@@ -41,14 +41,6 @@ int lkl_inet_pton(int af, const char *src, void *dst)
 }
 #endif
 
-static inline void set_sockaddr(struct lkl_sockaddr_in *sin, unsigned int addr,
-				unsigned short port)
-{
-	sin->sin_family = LKL_AF_INET;
-	sin->sin_addr.lkl_s_addr = addr;
-	sin->sin_port = port;
-}
-
 static inline int ifindex_to_name(int sock, struct lkl_ifreq *ifr, int ifindex)
 {
 	ifr->lkl_ifr_ifindex = ifindex;

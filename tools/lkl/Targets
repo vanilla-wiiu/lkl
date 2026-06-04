@@ -33,7 +33,9 @@ LDLIBS_cptofs-$(LKL_HOST_CONFIG_NEEDS_LARGP) += -largp
 tests-priv-y := tests/tests-common
 tests-y := tests/disk
 tests-y += tests/boot
+ifneq ($(LKL_HOST_CONFIG_BSD),y)
 tests-y += tests/disk-vfio-pci
+endif
 tests-y += tests/net-test
 tests-y += tests/config
 ifneq ($(LKL_HOST_CONFIG_BSD),y)

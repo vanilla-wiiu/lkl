@@ -56,8 +56,6 @@ do_steps: &do_steps
       command: |
         if [[ $CROSS_COMPILE == *android* ]]; then
           emulator -avd Nexus5_API24 -no-window -no-audio -no-boot-anim;
-        elif [[ $CROSS_COMPILE == *freebsd* ]] || [[ -n "$LKL_QEMU_TEST" ]]; then
-          cd /home/ubuntu && eval $QEMU
         fi
       background: true
   - run: cd tools/lkl && make -j8 ${MKARG}
@@ -71,11 +69,6 @@ do_steps: &do_steps
       command: |
         if [[ $CROSS_COMPILE == *android* ]]; then
           /home/ubuntu/circle-android.sh wait-for-boot;
-        elif [[ $CROSS_COMPILE == *freebsd* ]] || [[ -n "$LKL_QEMU_TEST" ]]; then
-          while ! $MYSSH -o ConnectTimeout=1 exit 2> /dev/null
-          do
-             sleep 5
-          done
         fi
   - run:
       name: run tests
@@ -116,13 +109,6 @@ jobs:
      ANDROID_SDK_ROOT: /home/ubuntu/android-sdk
    <<: *do_steps
 
-  freebsd11_x86_64:
-   docker:
-     - image: lkldocker/circleci-freebsd11-x86_64:v1.4
-   environment:
-     CROSS_COMPILE: "x86_64-pc-freebsd11-"
-   <<: *do_steps
-
   x86_64_valgrind:
    docker:
      - image: lkldocker/circleci-x86_64:v1.4
@@ -137,7 +123,6 @@ workflows:
   build:
     jobs:
      - android-aarch64
-     - freebsd11_x86_64
      - i386
   nightly:
     triggers:

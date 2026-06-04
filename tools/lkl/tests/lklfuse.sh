@@ -3,47 +3,38 @@
 script_dir=$(cd $(dirname ${BASH_SOURCE:-$0}); pwd)
 
 source $script_dir/test.sh
+source $script_dir/fs.sh
 
 cleanup()
 {
-    set -e
-
-    if type -P fusermount3 > /dev/null; then
-        fusermount3 -u $dir
+    umount_cmd=$(lkl_test_cmd 'which fusermount3 || which fusermount')
+    if [ -n "$umount_cmd" ]; then
+        lkl_test_cmd $umount_cmd -u $dir
     else
-        fusermount -u $dir
+        lkl_test_cmd umount $dir
     fi
-    rm $file
-    rmdir $dir
-}
-
-# $1 - fstype
-function prepfs()
-{
-    set -e
-
-    dd if=/dev/zero of=$file bs=1048576 count=300
-
-    yes | mkfs.$1 $file
+    cleanfsimg
+    lkl_test_cmd rmdir $dir
 }
 
 # $1 - filesystem type
 lklfuse_mount()
 {
-    ${script_dir}/../lklfuse $file $dir -o type=$1,lock=$lock_file
+    dir=$(lkl_test_cmd mktemp -d mnt-XXXX)
+    export_vars dir
+    lkl_test_exec ${script_dir}/../lklfuse $file $dir -o type=$1,lock=$file
 }
 
 lklfuse_basic()
 {
     set -e
 
-    cd $dir
-    touch a
-    if ! [ -e ]; then exit 1; fi
-    rm a
-    mkdir a
-    if ! [ -d ]; then exit 1; fi
-    rmdir a
+    lkl_test_cmd touch $dir/a
+    lkl_test_cmd test -e $dir/a
+    lkl_test_cmd rm $dir/a
+    lkl_test_cmd mkdir $dir/a
+    lkl_test_cmd test -d $dir/a
+    lkl_test_cmd rmdir $dir/a
 }
 
 # $1 - filesystem type
@@ -70,13 +61,17 @@ lklfuse_stressng()
 # $1 - filesystem type
 lklfuse_lock_conflict()
 {
-    local ret=$TEST_FAILURE unused_mnt=`mktemp -d`
+    local ret=$TEST_FAILURE unused_mnt=$(lkl_test_cmd mktemp -d)
 
     set +e
     # assume lklfuse already running with same lock file, causing lock conflict
-    ${script_dir}/../lklfuse -f $file $unused_mnt -o type=$1,lock=$lock_file
+    if [ -n "$BSD_WDIR" ]; then
+        lkl_test_cmd $BSD_WDIR/lklfuse -f $file $unused_mnt -o type=$1,lock=$file
+    else
+        lkl_test_exec ${script_dir}/../lklfuse -f $file $unused_mnt -o type=$1,lock=$file
+    fi
     [ $? -eq 2 ] && ret=$TEST_SUCCESS
-    rmdir "$unused_mnt"
+    lkl_test_cmd rmdir "$unused_mnt"
     return $ret
 }
 
@@ -96,7 +91,7 @@ if [ "$LKL_HOST_CONFIG_FUSE" != "y" ]; then
     exit 0
 fi
 
-if ! [ -e /dev/fuse ]; then
+if ! QUIET=1 lkl_test_cmd test -e /dev/fuse; then
     lkl_test_plan 0 "lklfuse.sh $fstype"
     echo "/dev/fuse not available"
     exit 0
@@ -108,15 +103,11 @@ if [ -z $(which mkfs.$fstype) ]; then
     exit 0
 fi
 
-file=`mktemp`
-dir=`mktemp -d`
-lock_file="$file"
-
 trap cleanup EXIT
 
 lkl_test_plan 5 "lklfuse $fstype"
 
-lkl_test_run 1 prepfs $fstype
+lkl_test_run 1 prepfsimg $fstype
 lkl_test_run 2 lklfuse_mount $fstype
 lkl_test_run 3 lklfuse_basic
 # stress-ng returns 2 with no apparent failures so skip it for now

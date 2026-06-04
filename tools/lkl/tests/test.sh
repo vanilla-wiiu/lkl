@@ -97,7 +97,7 @@ lkl_test_exec()
         file=$file.exe
     fi
 
-    if file $file | grep "interpreter /system/bin/linker" ; then
+    if file $file | grep -q "interpreter /system/bin/linker"; then
         adb push "$file" $ANDROID_WDIR
         if [ -n "$SUDO" ]; then
             ANDROID_USER=root
@@ -110,18 +110,15 @@ lkl_test_exec()
         fi
         WRAPPER="adb shell $SU"
         file=$ANDROID_WDIR/$(basename $file)
-    elif file $file | grep PE32; then
-        if uname -s | grep Linux; then
+    elif file $file | grep -q PE32; then
+        if uname -s | grep -q Linux; then
             WRAPPER="wine"
-	fi
-    elif file $file | grep ARM; then
-        WRAPPER="qemu-arm-static"
-    elif file $file | grep "FreeBSD" ; then
-        ssh_copy "$file" $BSD_WDIR
-        if [ -n "$SUDO" ]; then
-            SUDO=""
         fi
-        WRAPPER="$MYSSH $SU"
+    elif file $file | grep -q ARM; then
+        WRAPPER="qemu-arm-static"
+    elif file $file | grep -q "FreeBSD"; then
+        $MYSCP $file $MYHOST:$BSD_WDIR
+        WRAPPER="$MYSSH $SUDO"
         # ssh will mess up with pipes ('|') so, escape the pipe char.
         args="${@//\|/\\\|}"
         set - $BSD_WDIR/$(basename $file) $args
@@ -160,7 +157,8 @@ lkl_test_cmd()
         fi
         WRAPPER="adb shell $SU"
     elif [ -n "$LKL_HOST_CONFIG_BSD" ]; then
-        WRAPPER="$MYSSH $SU"
+        WRAPPER="$MYSSH"
+        USER=lkl
     fi
 
     echo "$@" | $WRAPPER sh $SHOPTS
@@ -190,34 +188,6 @@ adb_push()
     done
 }
 
-# XXX: $MYSSH and $MYSCP are defined in a circleci docker image.
-# see the definitions in lkl/lkl-docker:circleci/freebsd11/Dockerfile
-ssh_push()
-{
-    while [ -n "$1" ]; do
-        if [[ "$1" = *.sh ]]; then
-            type="script"
-        else
-            type="file"
-        fi
-
-        dir=$(dirname $1)
-        $MYSSH mkdir -p $BSD_WDIR/$dir
-
-        $MYSCP -P 7722 -r $basedir/$1 root@localhost:$BSD_WDIR/$dir
-        if [ "$type" = "script" ]; then
-            $MYSSH chmod a+x $BSD_WDIR/$1
-        fi
-
-        shift
-    done
-}
-
-ssh_copy()
-{
-    $MYSCP -P 7722 -r $1 root@localhost:$2
-}
-
 lkl_test_android_cleanup()
 {
     adb shell rm -rf $ANDROID_WDIR
@@ -236,6 +206,6 @@ fi
 
 if [ -n "$LKL_HOST_CONFIG_BSD" ]; then
     trap lkl_test_bsd_cleanup EXIT
-    export BSD_WDIR=/root/lkl
+    export BSD_WDIR=lkl
     $MYSSH mkdir -p $BSD_WDIR
 fi

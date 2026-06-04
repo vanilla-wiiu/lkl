@@ -428,7 +428,7 @@ static void add_neighbor(int ifindex, char *entries)
  */
 static int dump_file(char *path)
 {
-	int ret = -1, bytes_read = 0;
+	int ret = -1;
 	char str[1024] = { 0 };
 	int fd;
 
@@ -443,7 +443,7 @@ static int dump_file(char *path)
 	/* Need to print this out in order to make sense of the output */
 	lkl_printf("Reading from %s:\n==========\n", path);
 	while ((ret = lkl_sys_read(fd, str, sizeof(str) - 1)) > 0)
-		bytes_read += lkl_printf("%s", str);
+		lkl_printf("%s", str);
 	lkl_printf("==========\n");
 
 	if (ret) {

@@ -3,47 +3,7 @@
 script_dir=$(cd $(dirname ${BASH_SOURCE:-$0}); pwd)
 
 source $script_dir/test.sh
-
-function prepfs()
-{
-    set -e
-
-    file=`mktemp disk-XXXX`
-
-    dd if=/dev/zero of=$file bs=1048576 count=300
-
-    yes | mkfs.$1 $file
-
-    if ! [ -z $ANDROID_WDIR ]; then
-        adb shell mkdir -p $ANDROID_WDIR
-        adb push $file $ANDROID_WDIR
-        rm $file
-        file=$ANDROID_WDIR/$(basename $file)
-    fi
-    if ! [ -z $BSD_WDIR ]; then
-        $MYSSH mkdir -p $BSD_WDIR
-        ssh_copy $file $BSD_WDIR
-        rm $file
-        file=$BSD_WDIR/$(basename $file)
-    fi
-
-    export_vars file
-}
-
-function cleanfs()
-{
-    set -e
-
-    if ! [ -z $ANDROID_WDIR ]; then
-        adb shell rm $file
-        adb shell rm $ANDROID_WDIR/disk
-    elif ! [ -z $BSD_WDIR ]; then
-        $MYSSH rm $file
-        $MYSSH rm $BSD_WDIR/disk
-    else
-        rm $file
-    fi
-}
+source $script_dir/fs.sh
 
 if [ "$1" = "-t" ]; then
     shift
@@ -62,8 +22,8 @@ if [ -z $(which mkfs.$fstype) ]; then
 fi
 
 lkl_test_plan 1 "disk $fstype"
-lkl_test_run 1 prepfs $fstype
+lkl_test_run 1 prepfsimg $fstype
 lkl_test_exec $script_dir/disk -d $file -t $fstype $@
 lkl_test_plan 1 "disk $fstype"
-lkl_test_run 1 cleanfs
+lkl_test_run 1 cleanfsimg
 
