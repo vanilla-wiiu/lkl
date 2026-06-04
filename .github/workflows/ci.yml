@@ -34,11 +34,6 @@ jobs:
             runs_on: windows-2022
             pip_option: --break-system-packages
             shell: msys2 {0}
-          - displayTargetName: clang-build
-            os: unix
-            runs_on: ubuntu-22.04
-            shell: bash
-            build_options: "LLVM=1 CROSS_COMPILE=x86_64-linux-gnu"
           - displayTargetName: freebsd
             os: unix
             runs_on: ubuntu-22.04
@@ -46,10 +41,17 @@ jobs:
             build_options: "LLVM=1 CROSS_COMPILE=x86_64-unknown-freebsd SYSROOT=~/freebsd-sysroot"
             make_sysroot: "./tools/lkl/scripts/freebsd-make-sysroot.sh"
             run_qemu: true
+          - displayTargetName: fuzzers
+            os: unix
+            runs_on: ubuntu-22.04
+            shell: bash
+            build_options: "LKL_FUZZING=1 MMU=1 fuzzers"
+
     timeout-minutes: 100
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       USE_CCACHE: 1
+      PROTOBUF_MUTATOR_DIR: /tmp/libprotobuf-mutator
 
     defaults:
        run:
@@ -117,7 +119,10 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update -y
-          sudo apt install -y ccache libjsmn-dev libfuse3-dev clang lld llvm qemu-system-x86 qemu-utils sshpass cloud-image-utils
+          sudo apt install -y ccache libjsmn-dev libfuse3-dev clang lld llvm qemu-system-x86 \
+            qemu-utils sshpass cloud-image-utils binutils cmake ninja-build liblzma-dev libz-dev \
+            pkg-config autoconf libtool
+
       - name: Install patched binutils for Windows
         if: runner.os == 'Windows'
         run: |
@@ -161,10 +166,14 @@ jobs:
       - name: Make sysroot
         run: |
           ${{ matrix.make_sysroot }}
+      - name: Build libprotobuf-mutator
+        if: matrix.displayTargetName == 'fuzzers'
+        run: tools/lkl/scripts/libprotobuf-mutator-build.sh
       - name: Build
         run: |
           make -j4 -C tools/lkl ${{ matrix.build_options }}
       - name: Tests
+        if: matrix.displayTargetName != 'fuzzers'
         run: mkdir junit && make -C tools/lkl run-tests tests="--junit-dir ../../junit"
       - name: Save test results
         uses: actions/upload-artifact@v5
@@ -195,27 +204,3 @@ jobs:
         run: sudo pip install ply GitPython
       - name: Check coding style
         run: tools/lkl/scripts/checkpatch.sh
-
-  fuzzers:
-    runs-on: ubuntu-22.04
-    name: fuzzers
-    env:
-      PROTOBUF_MUTATOR_DIR: /tmp/libprotobuf-mutator
-    steps:
-      - name: Checkout
-        with:
-          fetch-depth: 0
-        uses: actions/checkout@v4
-      - name: Install clang toolchain
-        run: |
-          sudo apt update -y
-          sudo apt install -y clang lld llvm
-      - name: Install libprotobuf-mutator prerequisites
-        run: |
-          sudo apt update -y
-          sudo apt install -y binutils cmake ninja-build liblzma-dev libz-dev \
-            pkg-config autoconf libtool
-      - name: Build libprotobuf-mutator
-        run: tools/lkl/scripts/libprotobuf-mutator-build.sh
-      - name: Build fuzzers
-        run: make -j4 -C tools/lkl LKL_FUZZING=1 MMU=1 fuzzers
