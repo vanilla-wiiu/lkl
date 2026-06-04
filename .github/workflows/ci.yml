@@ -111,8 +111,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ runner.os }}-ccache-build-${{ github.sha }}
-          restore-keys: ${{ runner.os }}-ccache-build-
+          key: ${{ matrix.displayTargetName }}-ccache-build-${{ github.sha }}
+          restore-keys: ${{ matrix.displayTargetName }}-ccache-build-
       - name: Install ccache on ubuntu-latest
         if: runner.os == 'Linux'
         run: |
