@@ -27,15 +27,11 @@ static unsigned long irq_index_status;
 
 static inline unsigned long test_and_clear_irq_index_status(void)
 {
-	if (!irq_index_status)
-		return 0;
 	return __sync_fetch_and_and(&irq_index_status, 0);
 }
 
 static inline unsigned long test_and_clear_irq_status(int index)
 {
-	if (!irq_status[index])
-		return 0;
 	return __sync_fetch_and_and(&irq_status[index], 0);
 }
 
@@ -128,7 +124,11 @@ static inline void check_irq_status(int i, int unused)
 
 void run_irqs(void)
 {
-	for_each_bit(test_and_clear_irq_index_status(), check_irq_status, 0);
+	unsigned long pending;
+
+	/* Drain IRQs published while earlier pending IRQs are being handled. */
+	while ((pending = test_and_clear_irq_index_status()))
+		for_each_bit(pending, check_irq_status, 0);
 }
 
 int show_interrupts(struct seq_file *p, void *v)
