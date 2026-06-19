@@ -137,6 +137,44 @@ out:
 	return ret;
 }
 
+/*
+ * Run fn(arg) as a host task: same prologue as lkl_syscall (acquire the cpu
+ * lock, lazily bind the calling host thread to a host%d task, switch current to
+ * it) but invoke an arbitrary in-kernel callback instead of dispatching a
+ * syscall number. Used by the vanilla vhci fast-path so the host bridge can run
+ * URB givebacks / registration in proper host-task-in-kernel context (giveback
+ * enters mac80211 RX and may wake tasks, which requires a valid current and the
+ * cpu lock held).
+ */
+long lkl_run_as_host_task(long (*fn)(void *), void *arg)
+{
+	struct task_struct *task = host0;
+	long ret;
+
+	ret = lkl_cpu_get();
+	if (ret < 0)
+		return ret;
+
+	if (lkl_ops->tls_get) {
+		task = lkl_ops->tls_get(task_key);
+		if (!task) {
+			ret = new_host_task(&task, 0);
+			if (ret)
+				goto out;
+			lkl_ops->tls_set(task_key, task);
+		}
+	}
+
+	switch_to_host_task(task);
+
+	ret = fn(arg);
+
+out:
+	lkl_cpu_put();
+
+	return ret;
+}
+
 static struct task_struct *idle_host_task;
 
 /* called from idle, don't failed, don't block */

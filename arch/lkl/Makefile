@@ -52,7 +52,10 @@ endif
 LDFLAGS_vmlinux += -r
 LKL_ENTRY_POINTS := lkl_start_kernel lkl_sys_halt lkl_syscall lkl_trigger_irq \
 	lkl_get_free_irq lkl_put_irq lkl_is_running lkl_bug lkl_printf \
-	lkl_init lkl_cleanup
+	lkl_init lkl_cleanup \
+	vanilla_fp_register_rx vanilla_fp_unregister_rx \
+	vanilla_fp_register_tx vanilla_fp_unregister_tx \
+	vanilla_vhci_register vanilla_vhci_unregister vanilla_vhci_drain
 
 ifeq ($(CONFIG_OUTPUT_FORMAT),elf32-i386)
 LKL_ENTRY_POINTS += \

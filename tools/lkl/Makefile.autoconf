@@ -138,19 +138,23 @@ endef
 
 define llvm_target_to_ld_fmt
   $(if $(filter $(CROSS_COMPILE),x86_64-linux-gnu),elf64-x86-64,\
-    $(error Unsupported LLVM target $(CROSS_COMPILE)))
+    $(if $(filter aarch64-linux-android%,$(CROSS_COMPILE)),elf64-littleaarch64,\
+    $(error Unsupported LLVM target $(CROSS_COMPILE))))
 endef
 
 define do_autoconf_llvm
   $(eval LLVM_PREFIX := $(if $(filter %/,$(LLVM)),$(LLVM)))
   $(eval LLVM_SUFFIX := $(if $(filter -%,$(LLVM)),$(LLVM)))
   export CLANG_TARGET_FLAGS_lkl := $(CROSS_COMPILE)
-  export CC := $(LLVM_PREFIX)clang$(LLVM_SUFFIX)
+  # LKL_CC override: the Android NDK ships per-API clang wrappers
+  # (aarch64-linux-android28-clang) that bake in --target; the stock
+  # <prefix>clang<suffix> form can't express that, so allow an explicit CC.
+  export CC := $(if $(LKL_CC),$(LKL_CC),$(LLVM_PREFIX)clang$(LLVM_SUFFIX))
   export CXX := $(LLVM_PREFIX)clang++$(LLVM_SUFFIX)
   export LD := $(LLVM_PREFIX)ld.lld$(LLVM_SUFFIX)
   export AR := $(LLVM_PREFIX)llvm-ar$(LLVM_SUFFIX)
   $(eval LD := $(LLVM_PREFIX)ld.lld$(LLVM_SUFFIX))
-  $(eval CC := $(LLVM_PREFIX)clang$(LLVM_SUFFIX))
+  $(eval CC := $(if $(LKL_CC),$(LKL_CC),$(LLVM_PREFIX)clang$(LLVM_SUFFIX)))
   $(eval LD_FMT := $(call llvm_target_to_ld_fmt))
 endef
 

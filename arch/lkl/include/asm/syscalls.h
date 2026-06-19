@@ -4,6 +4,7 @@
 int syscalls_init(void);
 void syscalls_cleanup(void);
 long lkl_syscall(long no, long *params);
+long lkl_run_as_host_task(long (*fn)(void *), void *arg);
 void wakeup_idle_host_task(void);
 long lkl_sys_halt(void);
 

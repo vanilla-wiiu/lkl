@@ -6,6 +6,7 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 
+
 #include "usbip_common.h"
 #include "vhci.h"
 
@@ -212,24 +213,24 @@ static void vhci_rx_pdu(struct usbip_device *ud)
 		else if (ret == -EAGAIN) {
 			/* ignore if connection was idle */
 			if (vhci_priv_tx_empty(vdev))
-				return;
+				goto out;
 			pr_info("connection timed out with pending urbs\n");
 		} else if (ret != -ERESTARTSYS)
 			pr_info("xmit failed %d\n", ret);
 
 		usbip_event_add(ud, VDEV_EVENT_ERROR_TCP);
-		return;
+		goto out;
 	}
 	if (ret == 0) {
 		pr_info("connection closed");
 		usbip_event_add(ud, VDEV_EVENT_DOWN);
-		return;
+		goto out;
 	}
 	if (ret != sizeof(pdu)) {
 		pr_err("received pdu size is %d, should be %d\n", ret,
 		       (unsigned int)sizeof(pdu));
 		usbip_event_add(ud, VDEV_EVENT_ERROR_TCP);
-		return;
+		goto out;
 	}
 
 	usbip_header_correct_endian(&pdu, 0);
@@ -251,6 +252,7 @@ static void vhci_rx_pdu(struct usbip_device *ud)
 		usbip_event_add(ud, VDEV_EVENT_ERROR_TCP);
 		break;
 	}
+out:
 }
 
 int vhci_rx_loop(void *data)

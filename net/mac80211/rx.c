@@ -14,6 +14,8 @@
 #include <linux/kernel.h>
 #include <linux/skbuff.h>
 #include <linux/netdevice.h>
+
+#include <net/vanilla_fastpath.h>
 #include <linux/etherdevice.h>
 #include <linux/rcupdate.h>
 #include <linux/export.h>
@@ -1165,7 +1167,21 @@ static void ieee80211_release_reorder_frames(struct ieee80211_sub_if_data *sdata
  *
  * Callers must hold tid_agg_rx->reorder_lock.
  */
-#define HT_RX_REORDER_BUF_TIMEOUT (HZ / 10)
+/*
+ * A-MPDU RX reorder hold time. Upstream default is HZ/10 = 100ms: one lost or
+ * late MPDU stalls in-order delivery of every buffered frame behind it for up
+ * to 100ms while mac80211 waits for the gap to be filled by a retransmit. For
+ * the Wii U real-time A/V stream that hold is a visible video+audio freeze (it
+ * showed up as ~58-84ms "upstream-starved" SPIKEs with no reap SPIKE — frames
+ * were arriving at the device but held here before delivery, then flushed in a
+ * burst). A frame that arrives that late is useless for real-time playback, so
+ * cap the hold so a lost frame becomes a brief blip instead of a long pause.
+ * The missing slot is skipped and any late arrival is dropped, which our
+ * all-UDP A/V + HID paths tolerate. HZ=100 here, so 10ms is 1 jiffie — the
+ * floor at this HZ (the inline release checks 1 jiffie; the backing timer is
+ * ~2 jiffies). Going lower needs a higher CONFIG_HZ, not worth the global
+ * timer overhead. Was HZ/10 (100ms) upstream, then 20ms. */
+#define HT_RX_REORDER_BUF_TIMEOUT msecs_to_jiffies(10)
 
 static void ieee80211_sta_reorder_release(struct ieee80211_sub_if_data *sdata,
 					  struct tid_ampdu_rx *tid_agg_rx,
@@ -2739,8 +2755,17 @@ ieee80211_deliver_skb(struct ieee80211_rx_data *rx)
 #endif
 
 	if (skb) {
-		skb->protocol = eth_type_trans(skb, dev);
-		ieee80211_deliver_skb_to_local_stack(skb, rx);
+		/* Vanilla fast-path hook: copy decrypted ethernet frame into the
+		 * SPSC ring if its source MAC matches the registered peer.
+		 * Returns true when the fast-path owns the frame (consume-only
+		 * mode); we free it and skip the normal IP-stack delivery so
+		 * the relay's udp_recvmsg never sees it. */
+		if (vanilla_fp_rx_copy(skb, ehdr->h_source)) {
+			dev_kfree_skb(skb);
+		} else {
+			skb->protocol = eth_type_trans(skb, dev);
+			ieee80211_deliver_skb_to_local_stack(skb, rx);
+		}
 	}
 
 	if (xmit_skb) {
@@ -4853,6 +4878,18 @@ static void ieee80211_rx_8023(struct ieee80211_rx_data *rx,
 
 		if (!skb)
 			return;
+	}
+
+	/* Vanilla fast-path hook (fast-RX path mirror of the one in
+	 * ieee80211_deliver_skb()). Drivers like rtw88 satisfy mac80211's fast_rx
+	 * eligibility (sta->fast_rx) and deliver frames through here, bypassing the
+	 * slow deliver path entirely — so without this mirror the fast-path RX ring
+	 * never sees their frames (observed as fp_hook=0, with RX falling back to
+	 * the LKL UDP/relay path). Must run BEFORE eth_type_trans, while skb->data
+	 * is still the ethernet header that vanilla_fp_rx_copy() copies wholesale. */
+	if (vanilla_fp_rx_copy(skb, ((struct ethhdr *)skb->data)->h_source)) {
+		dev_kfree_skb(skb);
+		return;
 	}
 
 	/* deliver to local stack */

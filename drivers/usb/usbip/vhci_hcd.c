@@ -12,6 +12,8 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 
+#include <linux/vanilla_vhci_fastpath.h>
+
 #include "usbip_common.h"
 #include "vhci.h"
 
@@ -684,9 +686,16 @@ static void vhci_tx_urb(struct urb *urb, struct vhci_device *vdev)
 
 	urb->hcpriv = (void *) priv;
 
-	list_add_tail(&priv->list, &vdev->priv_tx);
-
-	wake_up(&vdev->waitq_tx);
+	/* Vanilla fast-path: if active, publish the submit to the shared ring and
+	 * park the priv directly on priv_rx (awaiting completion) instead of
+	 * waking the vhci_tx kthread. Falls back to the normal socket tx path
+	 * when inactive or the ring is full. */
+	if (vanilla_vhci_fp_try_submit(vdev, urb, priv->seqnum)) {
+		list_add_tail(&priv->list, &vdev->priv_rx);
+	} else {
+		list_add_tail(&priv->list, &vdev->priv_tx);
+		wake_up(&vdev->waitq_tx);
+	}
 	spin_unlock_irqrestore(&vdev->priv_lock, flags);
 }
 

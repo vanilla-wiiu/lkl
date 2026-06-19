@@ -1,0 +1,4 @@
+# Compiled Vanilla test harnesses (built from the matching .c sources)
+/synthetic-usbip-server
+/vanilla-lkl-real-bridge
+/vanilla-usbip-attach
