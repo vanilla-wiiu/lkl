@@ -57,7 +57,11 @@ void rtw_bf_assoc(struct rtw_dev *rtwdev, struct ieee80211_vif *vif,
 	}
 
 	ic_vht_cap = &hw->wiphy->bands[NL80211_BAND_5GHZ]->vht_cap;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 19, 0)
+	vht_cap = &sta->vht_cap;
+#else
 	vht_cap = &sta->deflink.vht_cap;
+#endif
 
 	rcu_read_unlock();
 
@@ -71,7 +75,11 @@ void rtw_bf_assoc(struct rtw_dev *rtwdev, struct ieee80211_vif *vif,
 		ether_addr_copy(bfee->mac_addr, bssid);
 		bfee->role = RTW_BFEE_MU;
 		bfee->p_aid = (bssid[5] << 1) | (bssid[4] >> 7);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
 		bfee->aid = vif->cfg.aid;
+#else
+		bfee->aid = bss_conf->aid;
+#endif
 		bfinfo->bfer_mu_cnt++;
 
 		rtw_chip_config_bfee(rtwdev, rtwvif, bfee, true);
@@ -124,8 +132,11 @@ void rtw_bf_init_bfer_entry_mu(struct rtw_dev *rtwdev,
 void rtw_bf_cfg_sounding(struct rtw_dev *rtwdev, struct rtw_vif *vif,
 			 enum rtw_trx_desc_rate rate)
 {
+	u8 csi_rsc = CSI_RSC_FOLLOW_RX_PACKET_BW;
 	u32 psf_ctl = 0;
-	u8 csi_rsc = 0x1;
+
+	if (rtwdev->chip->id == RTW_CHIP_TYPE_8822C)
+		csi_rsc = CSI_RSC_PRIMARY_20M_BW;
 
 	psf_ctl = rtw_read32(rtwdev, REG_BBPSF_CTRL) |
 		  BIT_WMAC_USE_NDPARATE |
@@ -134,7 +145,8 @@ void rtw_bf_cfg_sounding(struct rtw_dev *rtwdev, struct rtw_vif *vif,
 	rtw_write8_mask(rtwdev, REG_SND_PTCL_CTRL, BIT_MASK_BEAMFORM,
 			RTW_SND_CTRL_SOUNDING);
 	rtw_write8(rtwdev, REG_SND_PTCL_CTRL + 3, 0x26);
-	rtw_write8_clr(rtwdev, REG_RXFLTMAP1, BIT_RXFLTMAP1_BF_REPORT_POLL);
+	rtwdev->hal.rxfltmap1 &= ~BIT_RXFLTMAP1_BF_REPORT_POLL;
+	rtw_write16(rtwdev, REG_RXFLTMAP1, rtwdev->hal.rxfltmap1);
 	rtw_write8_clr(rtwdev, REG_RXFLTMAP4, BIT_RXFLTMAP4_BF_REPORT_POLL);
 
 	if (vif->net_type == RTW_NET_AP_MODE)
@@ -266,7 +278,8 @@ void rtw_bf_enable_bfee_mu(struct rtw_dev *rtwdev, struct rtw_vif *vif,
 	rtw_write16_set(rtwdev, REG_RXFLTMAP0, BIT_RXFLTMAP0_ACTIONNOACK);
 
 	/* accept NDPA and BF report poll */
-	rtw_write16_set(rtwdev, REG_RXFLTMAP1, BIT_RXFLTMAP1_BF);
+	rtwdev->hal.rxfltmap1 |= BIT_RXFLTMAP1_BF;
+	rtw_write16(rtwdev, REG_RXFLTMAP1, rtwdev->hal.rxfltmap1);
 }
 EXPORT_SYMBOL(rtw_bf_enable_bfee_mu);
 
@@ -386,6 +399,9 @@ void rtw_bf_cfg_csi_rate(struct rtw_dev *rtwdev, u8 rssi, u8 cur_rate,
 
 	csi_cfg = rtw_read32(rtwdev, REG_BBPSF_CTRL) & ~BIT_MASK_CSI_RATE;
 	cur_rrsr = rtw_read16(rtwdev, REG_RRSR);
+
+	if (rtwdev->chip->id == RTW_CHIP_TYPE_8822C)
+		csi_cfg |= BIT_CSI_FORCE_RATE;
 
 	if (rssi >= 40) {
 		if (cur_rate != DESC_RATE54M) {

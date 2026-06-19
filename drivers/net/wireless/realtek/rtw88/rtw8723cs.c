@@ -2,7 +2,7 @@
 /* Copyright Fiona Klute <fiona.klute@gmx.de> */
 
 #include <linux/mmc/sdio_func.h>
-#include <linux/mmc/sdio_ids.h>
+#include "sdio_ids.h"
 #include <linux/module.h>
 #include "main.h"
 #include "rtw8703b.h"
@@ -19,7 +19,7 @@ static const struct sdio_device_id rtw_8723cs_id_table[] = {
 MODULE_DEVICE_TABLE(sdio, rtw_8723cs_id_table);
 
 static struct sdio_driver rtw_8723cs_driver = {
-	.name = "rtw8723cs",
+	.name = KBUILD_MODNAME,
 	.id_table = rtw_8723cs_id_table,
 	.probe = rtw_sdio_probe,
 	.remove = rtw_sdio_remove,

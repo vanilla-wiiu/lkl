@@ -85,3 +85,27 @@ rtw88_sdio-objs			:= sdio.o
 
 obj-$(CONFIG_RTW88_USB)		+= rtw88_usb.o
 rtw88_usb-objs			:= usb.o
+
+# 88XXA family (lwfinger overlay): 8812a/8814a/8821a + USB front-ends, incl.
+# the RTL8811AU (handled by the 8821au driver). LEDs left off (CONFIG_RTW88_LEDS
+# undefined), matching mainline rtw88 which ships no led.c — so no led.o needed.
+obj-$(CONFIG_RTW88_88XXA)	+= rtw88_88xxa.o
+rtw88_88xxa-objs		:= rtw88xxa.o
+
+obj-$(CONFIG_RTW88_8821A)	+= rtw88_8821a.o
+rtw88_8821a-objs		:= rtw8821a.o rtw8821a_table.o
+
+obj-$(CONFIG_RTW88_8821AU)	+= rtw88_8821au.o
+rtw88_8821au-objs		:= rtw8821au.o
+
+obj-$(CONFIG_RTW88_8812A)	+= rtw88_8812a.o
+rtw88_8812a-objs		:= rtw8812a.o rtw8812a_table.o
+
+obj-$(CONFIG_RTW88_8812AU)	+= rtw88_8812au.o
+rtw88_8812au-objs		:= rtw8812au.o
+
+obj-$(CONFIG_RTW88_8814A)	+= rtw88_8814a.o
+rtw88_8814a-objs		:= rtw8814a.o rtw8814a_table.o
+
+obj-$(CONFIG_RTW88_8814AU)	+= rtw88_8814au.o
+rtw88_8814au-objs		:= rtw8814au.o
