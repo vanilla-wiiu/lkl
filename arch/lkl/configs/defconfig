@@ -1,3 +1,9 @@
+# Pin the ELF output format for the arm64 Android target. The Kconfig default
+# auto-detects via cc-objdump-file-format.sh, but that runs with the *host*
+# compiler during `make defconfig` and picks elf64-x86-64, so the aarch64
+# objects fail to link (ld.lld: incompatible with elf64-x86-64). This fork only
+# targets Android arm64, so pin it explicitly.
+CONFIG_OUTPUT_FORMAT="elf64-littleaarch64"
 # CONFIG_LOCALVERSION_AUTO is not set
 CONFIG_NO_HZ_IDLE=y
 CONFIG_HIGH_RES_TIMERS=y
