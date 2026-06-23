@@ -253,6 +253,7 @@ static void vhci_rx_pdu(struct usbip_device *ud)
 		break;
 	}
 out:
+	return;
 }
 
 int vhci_rx_loop(void *data)
